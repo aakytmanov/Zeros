@@ -1,0 +1,52 @@
+Zeros:=module()
+export UV, fZeros;
+
+option package;
+
+UV := proc(f::procedure)
+local i, x, y, T, XY:
+   # XY:=map2(index~, [x,y], [$1..nops([op](1,eval(f)))]):
+    XY:=[seq([x[i],y[i]], i=1..nops([op](1,eval(f))))]:
+    T:=map(unapply, (evalc@[Re,Im]@f@op@(Complex@op)~)(XY), op~(XY)):
+    return(T):
+end proc:
+
+fZeros := proc(F, L)
+ local A, B, AXY, BXY, f, i, Ix1, Ix2, Iy1, Iy2, IIx1, IIx2, IIy1, IIy2, ff, XY, fXY, fXYbar, Nf2, J, n, Z:
+ n := nops(F):
+ Z := [seq(z[i], i=1..n)]:
+ XY := ListTools[Flatten]([seq([x[i],y[i]], i=1..n)]):
+
+ f := F~(op(Z)):
+ fXY := UV~(F):
+ fXY := fXY~(op(XY)):
+ fXYbar := map(a->[a[1],-a[2]], fXY):
+ 
+ Nf2 := zip((a,b)->evalc(Complex(op(a))*Complex(op(b))), fXY, fXYbar):
+ Nf2 := (`+`(op(Nf2))):
+ 
+ A := f[1] * diff(f[2], z[1]) - f[2] * diff(f[1], z[1]):
+ B := f[1] * diff(f[2], z[2]) - f[2] * diff(f[1], z[2]):
+ AXY := UV(unapply(A, Z)): AXY := AXY(op(XY)):
+ BXY := UV(unapply(B, Z)): BXY := BXY(op(XY)):
+ A := evalc(Complex(op([AXY[1],-AXY[2]]))):
+ B := evalc(Complex(op([BXY[1],-BXY[2]]))):
+
+ J := LinearAlgebra[Determinant](VectorCalculus[Jacobian](f, Z)):
+ J := UV(unapply(J, Z)): 
+ J := evalc(Complex(op(J(op(XY))))):
+
+ Ix1 := subs(XY[1] = L[1], J * B / Nf2^2) - subs(XY[1] = L[2], J * B / Nf2^2):
+ Ix2 := subs(XY[3] = L[6], J * A / Nf2^2) - subs(XY[3] = L[5], J * A / Nf2^2):
+ Iy1 := subs(XY[2] = L[3], J * B / Nf2^2) - subs(XY[2] = L[4], J * B / Nf2^2):
+ Iy2 := subs(XY[4] = L[8], J * A / Nf2^2) - subs(XY[4] = L[7], J * A / Nf2^2):
+
+ IIx1 := evalf(2/(2*Pi*I)^2 * int(Ix1, XY[2] = L[3]..L[4], XY[3] = L[5]..L[6], XY[4] = L[7]..L[8])):
+ IIx2 := evalf(2/(2*Pi*I)^2 * int(Ix2, XY[1] = L[1]..L[2], XY[2] = L[3]..L[4], XY[4] = L[7]..L[8])):
+ IIy1 := evalf(2*I/(2*Pi*I)^2 * int(Iy1, XY[1] = L[1]..L[2], XY[3] = L[5]..L[6], XY[4] = L[7]..L[8])):
+ IIy2 := evalf(2*I/(2*Pi*I)^2 * int(Iy2, XY[1] = L[1]..L[2], XY[2] = L[3]..L[4], XY[3] = L[5]..L[6])):
+ 
+ return([IIx1 + IIx2 + IIy1 + IIy2]):
+end proc:
+
+end module:
